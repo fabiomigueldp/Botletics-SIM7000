@@ -189,7 +189,7 @@ class Botletics_modem : public BotleticsStreamType {
   boolean getGSMLoc(uint16_t *replycode, char *buff, uint16_t maxlen);
   boolean getGSMLoc(float *lat, float *lon);
   void setNetworkSettings(FStringPtr apn, FStringPtr username=0, FStringPtr password=0);
-  boolean postData(const char *request_type, const char *URL, const char *body = "", const char *token = "", uint32_t bodylen = 0);
+  boolean postData(const char *request_type, const char *URL, const char *body = "", const char *token = "", uint32_t bodylen = 0, char *reply = "");
   boolean postData(const char *server, uint16_t port, const char *connType, const char *URL, const char *body = "");
   int8_t getNetworkType(char *typeStringBuffer, size_t bufferLength);
   int8_t getBearerStatus(void);

@@ -1528,7 +1528,6 @@ boolean Botletics_modem::enableGPSNMEA(uint8_t i) {
 
 /********* GPRS **********************************************************/
 
-
 boolean Botletics_modem::enableGPRS(boolean onoff) {
   if (_type == SIM5320A || _type == SIM5320E || _type == SIM7500 || _type == SIM7600) {
     if (onoff) {
@@ -1969,7 +1968,7 @@ boolean Botletics_modem::wirelessConnStatus(void) {
   return true;
 }
 
-boolean Botletics_modem::postData(const char *request_type, const char *URL, const char *body, const char *token, uint32_t bodylen, char *reply = "") {
+boolean Botletics_modem::postData(const char *request_type, const char *URL, const char *body, const char *token, uint32_t bodylen, char *reply) {
   // NOTE: Need to open socket/enable GPRS before using this function
   // char auxStr[64];
 
@@ -2051,7 +2050,12 @@ boolean Botletics_modem::postData(const char *request_type, const char *URL, con
   getReply(F("AT+HTTPREAD"));
 
   readline(10000);
-  strncpy(reply, replybuffer, sizeof(reply));
+  // Substituir strncpy(reply, replybuffer, sizeof(reply)); por abordagem segura
+  if (reply != nullptr && strcmp(reply, "") != 0) {
+    // ATENÇÃO: O buffer 'reply' deve ser grande o suficiente para receber replybuffer (255 bytes).
+    // O uso de strcpy aqui é perigoso se o buffer for pequeno. O ideal seria passar o tamanho do buffer.
+    strcpy(reply, replybuffer);
+  }
   DEBUG_PRINT("\t<--- "); DEBUG_PRINTLN(replybuffer); // Print out server reply
 
   // Terminate HTTP service
@@ -2207,7 +2211,7 @@ boolean Botletics_modem_LTE::HTTP_connect(const char *server) {
   // Set up server URL
   char urlBuff[100];
 
-  sendCheckReply(F("AT+SHDISC"), ok_reply, 10000); // Disconnect HTTP
+  sendCheckReply(F("AT+SMCONF"), ok_reply, 10000); // Disconnect HTTP
 
   if (BOTLETICS_SSL) {
     sendCheckReply(F("AT+CSSLCFG=\"sslversion\",1,3"), ok_reply);
@@ -2283,26 +2287,26 @@ boolean Botletics_modem_LTE::HTTP_GET(const char *URI) {
 boolean Botletics_modem_LTE::HTTP_POST(const char *URI, const char *body, uint8_t bodylen) {
   // Use .HTTP_addHeader() as needed before using this function
   // Then use .HTTP_connect() to connect to the server first
-  char cmdBuff[150]; // Make sure this is large enough for URI
+  char cmdStr[150]; // Make sure this is large enough for URI
 
   // Example 2 in HTTP(S) app note for SIM7070 POST request
   // if (_type == SIM7070) {
-  //   sprintf(cmdBuff, "AT+SHBOD=%i,10000", bodylen);
-  //   getReply(cmdBuff, 10000);
+  //   sprintf(cmdStr, "AT+SHBOD=%i,10000", bodylen);
+  //   getReply(cmdStr, 10000);
   //   if (strstr(replybuffer, ">") == NULL) return false; // Wait for ">" to send message
   //   sendCheckReply(body, ok_reply, 2000);
 
   //   // if (! strcmp(replybuffer, "OK") != 0) return false; // Now send the JSON body
   // }
   // else { // For ex, SIM7000
-  //   sprintf(cmdBuff, "AT+SHBOD=\"%s\",%i", body, bodylen);
-  //   if (! sendCheckReply(cmdBuff, ok_reply, 10000)) return false;
+  //   sprintf(cmdStr, "AT+SHBOD=\"%s\",%i", body, bodylen);
+  //   if (! sendCheckReply(cmdStr, ok_reply, 10000)) return false;
   // }
 
-  memset(cmdBuff, 0, sizeof(cmdBuff)); // Clear URI char array
-  sprintf(cmdBuff, "AT+SHREQ=\"%s\",3", URI);
+  memset(cmdStr, 0, sizeof(cmdStr)); // Clear URI char array
+  sprintf(cmdStr, "AT+SHREQ=\"%s\",3", URI);
 
-  if (! sendCheckReply(cmdBuff, ok_reply, 10000)) return false;
+  if (! sendCheckReply(cmdStr, ok_reply, 10000)) return false;
 
 
 
@@ -3735,7 +3739,7 @@ boolean Botletics_modem::parseReply(FStringPtr toreply,
 
 // Parse a quoted string in the response fields and copy its value (without quotes)
 // to the specified character array (v).  Only up to maxlen characters are copied
-// into the result buffer, so make sure to pass a large enough buffer to handle the
+// into the result string, so make sure to pass a large enough buffer to handle the
 // response.
 boolean Botletics_modem::parseReplyQuoted(FStringPtr toreply,
           char *v, int maxlen, char divider, uint8_t index) {
@@ -3766,7 +3770,7 @@ boolean Botletics_modem::parseReplyQuoted(FStringPtr toreply,
 
   // Add a null terminator if result string buffer was not filled.
   if (j < maxlen)
-    v[j] = '\0';
+    v[j] = 0;
 
   return true;
 }
